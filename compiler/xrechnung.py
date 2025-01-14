@@ -232,6 +232,7 @@ class XRechnung:
             recursion_depths = self._process_dict(val, source)
             if (
                 recursion_depths == [("cbc:ID", False, 3)]
+                or target[key] == {}
                 or pd.Series(target[key].keys()).str.match(r"^@[A-Za-z]+$").all()
             ):
                 # remove sub-dictionary `target[key]` if,
@@ -370,11 +371,11 @@ class XRechnung:
                                     attachment.read()
                                 ).decode("utf-8")
                             self._logger.info(
-                                f" > embedding file '{column_dict["fakturist:Filename"]}'"
+                                f" > embedding file {column_dict['fakturist:Filename']}"
                             )
                         else:
                             self._logger.info(
-                                f" > column skipped, file '{column_dict["fakturist:Filename"]}' not found"
+                                f" > column skipped, file {column_dict['fakturist:Filename']} not found"
                             )
                             continue
 

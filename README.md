@@ -5,7 +5,7 @@ Minimalist stand-alone XRechnung generator
 
 ## Outline
 
-When it comes to [**open-source**](https://opensource.org/osd) and [**stand-alone applications**](https://en.wikipedia.org/wiki/Standalone_software) capable of creating **XML electronic invoices**, there are not many options to chose from. **XFakturist** strives to be one of them, while focussing on simple invoices with a small number of invoice items. While **XFakturist** is a minimalist tool to issue electronic invoices, it features the embedding of invoice attachments, like PDF documents, in the XML data. As a command-line application with incomplete documentation, **XFakturist** will likely only appeal to the technically savvy computer user.
+When it comes to [**open-source**](https://opensource.org/osd) and [**stand-alone applications**](https://en.wikipedia.org/wiki/Standalone_software) capable of creating **XML electronic invoices**, there are not many options to chose from. **XFakturist** strives to be one of them, focussing on simple invoices with a small number of invoice items. While **XFakturist** is a minimalist tool to issue electronic invoices, it features the embedding of invoice attachments, like PDF documents, in the XML data. As a command-line application with incomplete documentation, **XFakturist** will likely only appeal to the technically savvy computer user.
 
 
 ## Features
@@ -65,6 +65,7 @@ _Currently, only macOS and Linux systems are supported. MS Windows might also wo
 Python (version 3.10 or later) must be installed on your system, for example, a current [Anaconda distribution](https://www.anaconda.com/download). Among the required Python packages, we highlight the following ones, which might require upgrading your Python installation:
 ```
 json5
+openpyxl
 xmltodict
 ```
 XML electronic invoice creation using command `xr-compile` does only depend on the availability of such a Python installation on your computer. Download and unpack the **XFakturist** ZIP-file or clone the **XFakturist** Github repository. Make sure that Python script `xr-compile` is in your search path.
