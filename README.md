@@ -68,7 +68,7 @@ json5
 openpyxl
 xmltodict
 ```
-XML electronic invoice creation using command `xr-compile` does only depend on the availability of such a Python installation on your computer. Download and unpack the **XFakturist** ZIP-file or clone the **XFakturist** Github repository. Make sure that Python script `xr-compile` is in your search path.
+XML electronic invoice creation with command `xr-compile` only requires a Python installation on your computer, and, fairly standard as well as the above listed Python packages. Download and unpack the **XFakturist** ZIP-file or clone the **XFakturist** Github repository. Make sure that Python script `xr-compile` is in your search path.
 
 ### KoSIT software installation
 
@@ -76,7 +76,7 @@ To run the [KoSIT validation and visualisation software](https://github.com/itpl
 
 **XFakturist** offers the shell scripts `xr-validate` and `xr-convert` to run the [KoSIT software](https://github.com/itplr-kosit). Make sure that these scripts are in your search path. 
 
-KoSIT software does not come prepackaged with **XFakturist**. It must be downloaded and installed separately. To simplify this installation process, **XFakturist** provides shell script `get-kosit-xr`. Run this script from the top-level **XFakturist** directory. It downloads and unpacks three different [KoSIT software packages](https://github.com/itplr-kosit) as well as two software dependencies, [Saxonica Saxon Home Edition](https://github.com/Saxonica/Saxon-HE/) and [Apache Formatting Objects Processor](https://xmlgraphics.apache.org/fop/). 
+KoSIT software is not included in **XFakturist**. It must be downloaded and installed separately. To simplify this installation process, **XFakturist** provides shell script `get-kosit-xr`. Run this script from the top-level **XFakturist** directory. It downloads and unpacks three different [KoSIT software packages](https://github.com/itplr-kosit) as well as two software dependencies, [Saxonica Saxon Home Edition](https://github.com/Saxonica/Saxon-HE/) and [Apache Formatting Objects Processor](https://xmlgraphics.apache.org/fop/). 
 
 Four of these five packages are licensed by their respective vendors under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html). Software firm [Saxonica](https://www.saxonica.com/) also distributes its _Saxon Home Edition_ as [open source software](https://saxonica.plan.io/projects/saxonmirrorhe).
 
