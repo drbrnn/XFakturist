@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Copyright  2024 - present  Dr Tim Brunne (Munich)
+#
+# This file is part of XFakturist, <https://github.com/drbrnn/XFakturist>.
+#
+# XFakturist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# XFakturist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with XFakturist.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# purpose:  Download all required software components for electronic invoice
+#           validation and visualisation, copy all files to directory `kosit-xr`
+#           and create a few symbolic links. Software downloaded to the `kosit-xr`
+#           directory is required to run the following shell scripts:
+#
+#               xr-validate   : check hundreds of XML invoice validation rules
+#                               and create a corresponding validation report,
+#                               in HTML format
+#
+#               xr-convert    : to improve human readability, create HTML and
+#                               PDF files to display the information content of
+#                               an XML invoice
+#
+#           Downloaded software libraries are provided by German government
+#           authorities "Institut für IT-Standardisierung – Koordinierungsstelle
+#           für IT-Standards für den Bund und die Länder" (KoSIT), "Kassen- und
+#           Rechnungswesen des Bundes" (KKR), British software firm Saxonica 
+#           and the Apache foundation.
+
+# to update the variables below, check for KoSIT updates here:
+#
+#   https://github.com/itplr-kosit/validator/releases
+#   https://github.com/itplr-kosit/validator-configuration-xrechnung/releases
+#   (old: https://github.com/itplr-kosit/xrechnung-visualization/releases)
+#   https://projekte.kosit.org/xrechnung/xrechnung-visualization/-/tags
+#
+# to update the variables below, check for SAXONICA updates here:
+#
+#   https://www.saxonica.com/download/java.xml
+#
+# to update the variables below, check for APACHE FOP updates here:
+#
+#   https://www.apache.org/dyn/closer.cgi/xmlgraphics/fop
+#   https://dlcdn.apache.org/xmlgraphics/fop/binaries/
+#
+# see also: https://github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/docs/usage.md
+
+KOSIT_VALIDATOR_VERSION="1.5.0"
+KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2024-06-20"
+KOSIT_VISUALIZATION_VERSION="2024-06-20"
+KOSIT_XRECHNUNG_STANDARD="3.0.2"
+SAXON_RELEASE="12-5"
+FOP_VERSION="2.10"
+
+
+# (-1-) specify download locations of ZIP files from KoSIT et al.
+#
+# [1] KoSIT validator
+# [2] KoSIT validator configuration (for XRechnung and other EN16931 compliant invoices)
+# [3] KoSIT invoice visualisation (for XRechnung and other EN16931 compliant invoices)
+# [4] Saxonica Saxon Home Edition Java archive (in particular, for the XSL translations required for visualisation)
+# [5] Apache Formatting Objects Processor (FOP)
+
+ZIPFILE_NAMES[1]="validator-${KOSIT_VALIDATOR_VERSION}-distribution"
+ZIPFILE_NAMES[2]="validator-configuration-xrechnung_${KOSIT_XRECHNUNG_STANDARD}_${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
+# - ZIPFILE_NAMES[3]="xrechnung-${KOSIT_XRECHNUNG_STANDARD}-xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
+ZIPFILE_NAMES[3]="xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
+ZIPFILE_NAMES[4]="SaxonHE${SAXON_RELEASE}J"
+ZIPFILE_NAMES[5]="fop-${FOP_VERSION}-bin"
+
+URL_BASENAMES[1]="https://github.com/itplr-kosit/validator/releases/download/v${KOSIT_VALIDATOR_VERSION}"
+URL_BASENAMES[2]="https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/release-${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
+# - URL_BASENAMES[3]="https://github.com/itplr-kosit/xrechnung-visualization/releases/download/v${KOSIT_VISUALIZATION_VERSION}"
+URL_BASENAMES[3]="https://projekte.kosit.org/xrechnung/xrechnung-visualization/-/archive/v${KOSIT_VISUALIZATION_VERSION}"
+URL_BASENAMES[4]="https://github.com/Saxonica/Saxon-HE/releases/download/SaxonHE${SAXON_RELEASE}"
+# - URL_BASENAMES[5]="https://archive.apache.org/dist/xmlgraphics/fop/binaries"
+URL_BASENAMES[5]="https://dlcdn.apache.org/xmlgraphics/fop/binaries"
+
+
+# (-2-) download ZIP files
+
+rm -rf kosit-xr
+if [ ! -d kosit-xr ] ; then mkdir kosit-xr ; fi
+if [ ! -d downloads ] ; then mkdir downloads ; fi
+
+for i in 1 2 3 4 5
+do
+    curl -L ${URL_BASENAMES[i]}/${ZIPFILE_NAMES[i]}.zip --output downloads/${ZIPFILE_NAMES[i]}.zip
+    # FIXME: add hash sum or signature checks to verify integrity of downloads
+
+    unzip downloads/${ZIPFILE_NAMES[i]}.zip -d kosit-xr/${ZIPFILE_NAMES[i]}
+done
+
+
+# (-3-) create generic-name soft links
+
+cd kosit-xr
+
+ln -f -s ${ZIPFILE_NAMES[1]}/validationtool-${KOSIT_VALIDATOR_VERSION}-standalone.jar validationtool.jar
+ln -f -s ${ZIPFILE_NAMES[2]} validator-configuration
+mv ${ZIPFILE_NAMES[3]}/*/* ${ZIPFILE_NAMES[3]}/
+ln -f -s ${ZIPFILE_NAMES[3]}/conf conf
+ln -f -s ${ZIPFILE_NAMES[3]}/src/xsl xsl
+ln -f -s ${ZIPFILE_NAMES[3]}/src/xsd xsd
+ln -f -s ${ZIPFILE_NAMES[4]}/saxon-he-$(echo ${SAXON_RELEASE} | sed 's/-/./').jar saxon-he.jar
+mv ${ZIPFILE_NAMES[5]}/*/* ${ZIPFILE_NAMES[5]}/
+ln -f -s ${ZIPFILE_NAMES[5]}/fop fop

@@ -1,0 +1,249 @@
+#!/bin/sh
+
+# Copyright  2024 - present  Dr Tim Brunne (Munich)
+#
+# This file is part of XFakturist, <https://github.com/drbrnn/XFakturist>.
+#
+# XFakturist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# XFakturist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with XFakturist.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# purpose:  Convert an XML data set according to the XRechnung invoice
+#           specification to human readable formats, a PDF and an HTML file.
+#           Both files aim at displaying all invoice data of the original 
+#           XML data set. However, in contrast to the XML data set, according
+#           German law as of calendar year 2025, the PDF and HTML files
+#           do not represent 'electronic invoices' (elektronische Rechnung)
+#           according to the German VAT Act (Umsatzsteuergesetz).
+
+
+# (-1-) determine true script directory: resolve (multiple) soft link(s)
+
+XR_TEMP_DIR="/var/tmp" # system specific directory for temporary files
+
+SCRIPT="$0"
+while [ -h "$SCRIPT" ]
+do
+    LS_SCRIPT=`ls -ld "$SCRIPT"`
+    LINK=`expr "$LS_SCRIPT" : '.*-> \(.*\)$'`
+    if expr "$LINK" : '/.*' > /dev/null
+    then
+        SCRIPT="$LINK"
+    else
+        SCRIPT=`dirname "$SCRIPT"`/"$LINK"
+    fi
+done
+KOSIT_DIR="$(dirname ${SCRIPT})/kosit-xr"
+
+
+# (-2-) get invoice file name; check XML file existence;
+#       get optional language parameter
+
+INVOICE=$1
+XR_LANG=$(echo $2 | awk '{ print tolower($0) }')
+if [ ! "${XR_LANG}" = "en" ] ; then XR_LANG="de" ; fi
+
+ERROR=""
+if [ -z "${INVOICE}" ] ; then
+    ERROR="usage: $(basename $0) <XML electronic invoice file> [de|en]"
+elif [ ! -f "${INVOICE}" ] ; then
+    ERROR="${INVOICE} - invoice file does not exist"
+elif [ -z "$(head -n1 ${INVOICE} | awk '/.\?xml version=\"1.0\" .*\?./')" ] ; then
+    ERROR="${INVOICE} is not an XML file"
+fi
+
+if [ -n "${ERROR}" ] ; then
+    echo ${ERROR}
+    echo "an error occurred, execution halted"
+    exit 1
+else
+    INVOICE_BASENAME=$(basename ${INVOICE})
+    INVOICE_BASENAME=${INVOICE_BASENAME%.*}
+fi
+
+
+# (-3-) For the required transformation to an intermediate data format,
+#       distinguish among the different types of XML electronic invoice formats,
+#       by looking for some basic features.
+
+# see:  https://github.com/itplr-kosit/xrechnung-visualization/blob/master/README.md
+
+INVOICE_SIGNATURES[1]="<Invoice |<[a-z0-9]+\:Invoice "
+INVOICE_SIGNATURES[2]="xmlns\:*[a-z0-9]*=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\""
+
+CREDITNOTE_SIGNATURES[1]="<CreditNote |<[a-z0-9]+\:CreditNote "
+CREDITNOTE_SIGNATURES[1]="xmlns\:*[a-z0-9]*=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\""
+
+CII_SIGNATURES[1]="<rsm:CrossIndustryInvoice\ .*"
+CII_SIGNATURES[2]="xmlns\:rsm=\"urn:un:unece:uncefact:data:standard:CrossIndustryInvoice\:*[0-9]*\""
+
+if [ \
+    -n "$(awk "/${INVOICE_SIGNATURES[1]}/" ${INVOICE})" -a \
+    -n "$(awk "/${INVOICE_SIGNATURES[2]}/" ${INVOICE})" \
+] ; then
+    XSL_SCRIPT="${KOSIT_DIR}/xsl/ubl-invoice-xr.xsl"
+    echo "identified format UBL Invoice"
+elif [ \
+    -n "$(awk "/${CREDITNOTE_SIGNATURES[1]}/" ${INVOICE})" -a \
+    -n "$(awk "/${CREDITNOTE_SIGNATURES[2]}/" ${INVOICE})" \
+] ; then
+    XSL_SCRIPT="${KOSIT_DIR}/xsl/ubl-creditnote-xr.xsl"
+    echo "identified format UBL CreditNote"
+elif [ \
+    -n "$(awk "/${CII_SIGNATURES[1]}/" ${INVOICE})" -a \
+    -n "$(awk "/${CII_SIGNATURES[2]}/" ${INVOICE})" \
+] ; then
+    XSL_SCRIPT="${KOSIT_DIR}/xsl/cii-xr.xsl"
+    echo "identified format UN CEFACT Cross Industry Invoice"
+else
+    ERROR="unknown XML format"
+    echo ${ERROR}
+    echo "an error occurred, execution halted"
+    exit 1
+fi
+
+INVOICE_TMP="${XR_TEMP_DIR}/${INVOICE_BASENAME}.xr.xml"
+# java -jar ${KOSIT_DIR}/saxon-he.jar \
+#     -xsl:${KOSIT_DIR}/xsl/ubl-invoice-xr.xsl \
+#     -s:${INVOICE} -o:${INVOICE_TMP}
+java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
+     -xsl:${XSL_SCRIPT} \
+     -s:${INVOICE} \
+     -o:${INVOICE_TMP}
+
+
+# (-4-) visualisation: HTML format
+
+INVOICE_HTML="${INVOICE_BASENAME}_converted_${XR_LANG}.html"
+java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
+     -xsl:${KOSIT_DIR}/xsl/xrechnung-html.xsl \
+     -s:${INVOICE_TMP} \
+     -o:${INVOICE_HTML} \
+     lang="${XR_LANG}"
+
+
+# (-5-) visualisation: PDF format
+
+INVOICE_FO="${XR_TEMP_DIR}/${INVOICE_BASENAME}.fo"
+java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
+     -xsl:${KOSIT_DIR}/xsl/xr-pdf.xsl \
+     -s:${INVOICE_TMP} \
+     -o:${INVOICE_FO} \
+    lang="${XR_LANG}" \
+    fop.extensions="fop"
+    # invoiceline-layout="tabular" \
+
+ln -s ${KOSIT_DIR}/conf/fonts ${XR_TEMP_DIR}/fonts
+INVOICE_PDF="${INVOICE_BASENAME}_converted_${XR_LANG}.pdf"
+sh ${KOSIT_DIR}/fop/fop \
+    -c ${KOSIT_DIR}/conf/fop.xconf \
+    -fo ${INVOICE_FO} \
+    -pdf ${INVOICE_PDF}
+
+    # -l $(echo ${XR_LANG} | awk '{ print toupper($0) }') \
+    # -cache ${KOSIT_DIR}/xrechnung-visualization-2024-06-20/conf
+
+
+# (-6-) clean-up
+
+rm ${INVOICE_TMP} ${INVOICE_FO} ${XR_TEMP_DIR}/fonts
+
+# USAGE
+# fop [options] [-fo|-xml] infile [-xsl file] [-awt|-pdf|-mif|-rtf|-tiff|-png|-pcl|-ps|-txt|-at [mime]|-print] <outfile>
+#  [OPTIONS]  
+#   -version          print FOP version and exit
+#   -x                dump configuration settings  
+#   -c cfg.xml        use additional configuration file cfg.xml
+#   -l lang           the language to use for user information 
+#   -nocs             disable complex script features
+#   -r                relaxed/less strict validation (where available)
+#   -dpi xxx          target resolution in dots per inch (dpi) where xxx is a number
+#   -s                for area tree XML, down to block areas only
+#   -v                run in verbose mode (currently simply print FOP version and continue)
+
+#   -o [password]     PDF file will be encrypted with option owner password
+#   -u [password]     PDF file will be encrypted with option user password
+#   -noprint          PDF file will be encrypted without printing permission
+#   -nocopy           PDF file will be encrypted without copy content permission
+#   -noedit           PDF file will be encrypted without edit content permission
+#   -noannotations    PDF file will be encrypted without edit annotation permission
+#   -nofillinforms    PDF file will be encrypted without fill in interactive form fields permission
+#   -noaccesscontent  PDF file will be encrypted without extract text and graphics permission
+#   -noassembledoc    PDF file will be encrypted without assemble the document permission
+#   -noprinthq        PDF file will be encrypted without print high quality permission
+#   -a                enables accessibility features (Tagged PDF etc., default off)
+#   -pdfprofile prof  PDF file will be generated with the specified profile
+#                     (Examples for prof: PDF/A-1b or PDF/X-3:2003)
+
+#   -conserve         enable memory-conservation policy (trades memory-consumption for disk I/O)
+#                     (Note: currently only influences whether the area tree is serialized.)
+
+#   -cache            specifies a file/directory path location for the font cache file
+#   -flush            flushes the current font cache file
+
+#  [INPUT]  
+#   infile            xsl:fo input file (the same as the next) 
+#                     (use '-' for infile to pipe input from stdin)
+#   -fo  infile       xsl:fo input file  
+#   -xml infile       xml input file, must be used together with -xsl 
+#   -atin infile      area tree input file 
+#   -ifin infile      intermediate format input file 
+#   -imagein infile   image input file (piping through stdin not supported)
+#   -xsl stylesheet   xslt stylesheet 
+ 
+#   -param name value <value> to use for parameter <name> in xslt stylesheet
+#                     (repeat '-param name value' for each parameter)
+ 
+#   -catalog          use catalog resolver for input XML and XSLT files
+#  [OUTPUT] 
+#   outfile           input will be rendered as PDF into outfile
+#                     (use '-' for outfile to pipe output to stdout)
+#   -pdf outfile      input will be rendered as PDF (outfile req'd)
+#   -pdfa1b outfile   input will be rendered as PDF/A-1b compliant PDF
+#                     (outfile req'd, same as "-pdf outfile -pdfprofile PDF/A-1b")
+#   -awt              input will be displayed on screen 
+#   -rtf outfile      input will be rendered as RTF (outfile req'd)
+#   -pcl outfile      input will be rendered as PCL (outfile req'd) 
+#   -ps outfile       input will be rendered as PostScript (outfile req'd) 
+#   -afp outfile      input will be rendered as AFP (outfile req'd)
+#   -tiff outfile     input will be rendered as TIFF (outfile req'd)
+#   -png outfile      input will be rendered as PNG (outfile req'd)
+#   -txt outfile      input will be rendered as plain text (outfile req'd) 
+#   -at [mime] out    representation of area tree as XML (outfile req'd) 
+#                     specify optional mime output to allow the AT to be converted
+#                     to final format later
+#   -if [mime] out    representation of document in intermediate format XML (outfile req'd)
+#                     specify optional mime output to allow the IF to be converted
+#                     to final format later
+#   -print            input file will be rendered and sent to the printer 
+#                     see options with "-print help" 
+#   -out mime outfile input will be rendered using the given MIME type
+#                     (outfile req'd) Example: "-out application/pdf D:\out.pdf"
+#                     (Tip: "-out list" prints the list of supported MIME types and exits)
+#   -svg outfile      input will be rendered as an SVG slides file (outfile req'd) 
+#                     Experimental feature - requires additional fop-sandbox.jar.
+
+#   -foout outfile    input will only be XSL transformed. The intermediate 
+#                     XSL-FO file is saved and no rendering is performed. 
+#                     (Only available if you use -xml and -xsl parameters)
+
+#  [Examples]
+#   fop foo.fo foo.pdf 
+#   fop -fo foo.fo -pdf foo.pdf (does the same as the previous line)
+#   fop -xml foo.xml -xsl foo.xsl -pdf foo.pdf
+#   fop -xml foo.xml -xsl foo.xsl -foout foo.fo
+#   fop -xml - -xsl foo.xsl -pdf -
+#   fop foo.fo -mif foo.mif
+#   fop foo.fo -rtf foo.rtf
+#   fop foo.fo -print
+#   fop foo.fo -awt

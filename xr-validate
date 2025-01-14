@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# Copyright  2024 - present  Dr Tim Brunne (Munich)
+#
+# This file is part of XFakturist, <https://github.com/drbrnn/XFakturist>.
+#
+# XFakturist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# XFakturist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with XFakturist.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# purpose:  Validate electronic invoices in XML format that are intended
+#           to be compliant with European norm EN 16931 and, potentially,
+#           also with a specific Core Invoice Usage Specification (CIUS),
+#           which is German XRechnung standard in the context of this
+#           software. For the validation and validation configuration, this
+#           script employs the reference implementation of German government
+#           body KoSIT, which is also responsible for the specification of
+#           the standard XRechnung.
+
+# see:      https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/EN+16931+compliance
+#           https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/eInvoicing+in+Germany
+#           https://xeinkauf.de/xrechnung/
+
+
+# (-1-) determine real path to the script: resolve (multiple) soft link(s)
+
+SCRIPT="$0"
+while [ -h "$SCRIPT" ]
+do
+    LS_SCRIPT=`ls -ld "$SCRIPT"`
+    LINK=`expr "$LS_SCRIPT" : '.*-> \(.*\)$'`
+    if expr "$LINK" : '/.*' > /dev/null
+    then
+        SCRIPT="$LINK"
+    else
+        SCRIPT=`dirname "$SCRIPT"`/"$LINK"
+    fi
+done
+
+
+# (-2-) get invoice file name (1st script parameter)
+
+INVOICE=$1
+ERROR=""
+if [ -z "${INVOICE}" ]; then
+    ERROR="usage: $(basename $0) <XML electronic invoice>"
+elif [ ! -f "${INVOICE}" ] ; then
+    ERROR="${INVOICE} - invoice file does not exist"
+fi
+
+if [ -n "${ERROR}" ] ; then
+    echo ${ERROR}
+    echo "an error occurred, execution halted"
+    exit 1
+else
+    INVOICE_BASENAME=$(basename ${INVOICE})
+    INVOICE_BASENAME=${INVOICE_BASENAME%.*}
+fi
+
+
+# (-3-) run the KoSIT validator
+
+KOSIT_DIR="$(dirname ${SCRIPT})/kosit-xr"
+
+java -jar ${KOSIT_DIR}/validationtool.jar \
+     -s ${KOSIT_DIR}/validator-configuration/scenarios.xml \
+     -r ${KOSIT_DIR}/validator-configuration \
+     -h ${INVOICE}
+
+for REPORT in ${INVOICE_BASENAME}-report.*ml
+do
+    mv ${REPORT} $(echo ${REPORT} | sed "s/-report\./_validation_report./")
+done

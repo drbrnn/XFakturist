@@ -1,0 +1,359 @@
+// Copyright  2024 - present  Dr Tim Brunne (Munich)
+//
+// This file is part of XFakturist, <https://github.com/drbrnn/XFakturist>.
+//
+// XFakturist is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// XFakturist is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with XFakturist.  If not, see <http://www.gnu.org/licenses/>.
+//
+//
+// Explanations for this file (German):
+//
+// "business term" (BT) und "business group" (BG) gemäß Norm DIN EN 16931 nebst
+// zugehörigem betriebswirtschaftlichen Begriff laut genannter Norm (das semantische
+// Modell), Kennzeichnung der Kardinalität 1..1 durch Doppelkreuz-Zeichen (zweifach
+// bei Notwendigkeit infolge der Norm DIN EN 16931; einfaches Doppelkreuz, wenn der
+// XRechnung-Standard die Erfordernis bedingt)
+//
+// Die Reihenfolge in diesem Dokument ist entscheidend und richtet sich nach den
+// Erfordernissen des UBL-Rechnungsstandards, spezifiziert durch das 
+// "XML Stylesheet Definition" Dokument (XSD),
+//      https://docs.oasis-open.org/ubl/os-UBL-2.1/xsdrt/maindoc/UBL-Invoice-2.1.xsd,
+// und zugehörige XSD-Dateien.
+//
+// Dementsprechend wird vorausgesetzt, dass diese JSON-Datei beim Import als 
+// Python "ordered dictionary" ohne Veränderung der hier festgelegten Reihenfolge
+// eingelesen wird.
+{
+    "Invoice": {
+        "@xmlns": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+        "@xmlns:cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+        "@xmlns:cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+        //
+        "cbc:CustomizationID": "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0", // ## BT-24 Spezifikationskennung
+        "cbc:ProfileID": "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0", // BT-23 Geschäftsprozesstyp
+        //
+        "cbc:ID": "xr:Invoice_number", // ## BT-1 Rechnungsnummer
+        "cbc:UUID": "fakturist:UUID", // ein "Universally Unique Identifier" , also eine 128-Bit-Zahl (nicht Teil der XRechnung-Spezifikation)
+        "cbc:IssueDate": "xr:Invoice_issue_date", // ## BT-2 Rechnungsdatum
+        "cbc:DueDate": "xr:Payment_due_date", // BT-9 Fälligkeitsdatum der Zahlung
+        "cbc:InvoiceTypeCode": "xr:Invoice_type_code", // ## BT-3 Code für den Rechnungstyp (380 für commercial invoice, gemäß UNTDID 1001, https://unece.org/code-lists)
+        "cbc:Note": [
+            // BT-21 Qualifizierung des Freitextes zur Rechnung
+            "xr:Invoice_note" // BT-22 Freitext zur Rechnung
+        ],
+        "cbc:TaxPointDate": "xr:Value_added_tax_point_date", // BT-7 Datum der Steuerfälligkeit
+        //
+        // BT-8 Code für das Datum der Steuerfälligkeit
+        //
+        "cbc:DocumentCurrencyCode": "xr:Invoice_currency_code", // ## BT-5 Code für die Rechnungswährung
+        "cbc:TaxCurrencyCode": "xr:VAT_accounting_currency_code", // BT-6 Code für die Währung der Umsatzsteuerbuchung
+        "cbc:AccountingCost": "xr:Buyer_accounting_reference", // BT-19 Buchungsreferenz des Käufers
+        "cbc:BuyerReference": "xr:Buyer_reference", // # BT-10 Referenz des Käufers (Leitweg-ID der XRechnung)
+        "cac:InvoicePeriod": [
+            {
+                "cbc:StartDate": "xr:Invoicing_period_start_date", // BT-73 Anfangsdatum des Rechnungszeitraums
+                "cbc:EndDate": "xr:Invoicing_period_end_date" // BT-74 Enddatum des Rechnungszeitraums
+            }
+        ],
+        "cac:OrderReference": {
+            "cbc:ID": "xr:Purchase_order_reference", // BT-13 Bestellreferenz
+            "SalesOrderID": "xr:Sales_order_reference" // BT-14 Verkaufsauftragsreferenz
+        },
+        "cac:BillingReference": [
+            {
+                "cac:InvoiceDocumentReference": {
+                    "cbc:ID": "xr:Preceding_Invoice_reference", // BT-25 Referenz auf die vorausgegangene Rechnung
+                    "cbc:IssueDate": "xr:Preceding_Invoice_issue_date" // BT-26 Rechnungsdatum der vorausgegangenen Rechnung
+                }
+            }
+        ],
+        "cac:DespatchDocumentReference": [
+            {
+                "cbc:ID": "xr:Despatch_advice_reference" // BT-16 Lieferavisreferenz
+            }
+        ],
+        "cac:ReceiptDocumentReference": [
+            {
+                "cbc:ID": "xr:Receiving_advice_reference" // BT-15 Referenz auf die Wareneingangsmeldung
+            }
+        ],
+        "cac:OriginatorDocumentReference": [
+            {
+                "cbc:ID": "xr:Tender_or_lot_reference" // BT-17 Ausschreibungs- oder Losreferenz
+            }
+        ],
+        "cac:ContractDocumentReference": [
+            {
+                "cbc:ID": "xr:Contract_reference" // BT-12 Vertragsreferenz
+            }
+        ],
+        "cac:AdditionalDocumentReference": [
+            {
+                "cbc:ID": "xr:Supporting_document_reference", // BT-122 Kennung der rechnungsbegründenden Unterlage
+                "cbc:DocumentDescription": "xr:Supporting_document_description", // BT-123 Beschreibung der rechnungsbegründenden Unterlage
+                "cac:Attachment": {
+                    "cbc:EmbeddedDocumentBinaryObject": {
+                        "@mimeCode": "fakturist:MIME_code", // BT-125
+                        "@filename": "fakturist:Filename", // BT-125
+                        "#text": "xr:Attached_document" // BT-125 Anhangsdokument, welches als Binärobjekt eingebettet wird, mit den Attributen Dateiname und MIME-Code
+                    }
+                },
+                "cac:ExternalReference": {
+                    "cbc:URI": "xr:External_document_location" // BT-124 Bezungsort der rechnungsbegründenden Unterlage
+                }
+            }
+            // {
+            //     "cbc:ID": "xr:Invoiced_object_identifier" // BT-18 Objektkennung 
+            // }
+        ],
+        "cac:ProjectReference": [
+            {
+                "cbc:ID": "xr:Project_reference" // BT-11 Projektreferenz
+            }
+        ],
+        "cac:AccountingSupplierParty": {
+            "cac:Party": {
+                "cbc:EndpointID": {
+                    "@schemeID": "EM",
+                    "#text": "xr:Seller_electronic_address" // BT-34 Elektronische Adresse des Verkäufers (Email-Adresse)
+                },
+                "cac:PartyName": {
+                    "cbc:Name": "xr:Seller_trading_name" // BT-28 Handelsname des Verkäufers
+                },
+                "cac:PostalAddress": {
+                    "cbc:StreetName": "xr:Seller_address_line_1", // BT-35 Zeile 1 der Verkäuferanschrift
+                    // BT-36 Zeile 2 der Verkäuferanschrift
+                    "cbc:CityName": "xr:Seller_city", // # BT-37 Stadt der Verkäuferanschrift
+                    "cbc:PostalZone": "xr:Seller_post_code", // # BT-38 Postleitzahl der Verkäuferanschrift
+                    // BT-39 Region oder Bundesland der Verkäuferanschrift
+                    "cac:Country": {
+                        "cbc:IdentificationCode": "xr:Seller_country_code" // ## BT-40 Ländercode der Verkäuferanschrift
+                    }
+                },
+                "cac:PartyIdentification": {
+                    "cbc:ID": "xr:Seller_identifier" // BT-29 Kennung des Verkäufers
+                },
+                "cac:PartyTaxScheme": [
+                    {
+                        "cbc:CompanyID": "xr:Seller_VAT_identifier", // # BT-31 Umsatzsteuer-Identifikationsnummer des Verkäufers
+                        "cac:TaxScheme": {
+                            "cbc:ID": "VAT"
+                        }
+                    },
+                    {
+                        "cbc:CompanyID": "xr:Seller_tax_registration_identifier", // BT-32 Steuernummer des Verkäufers
+                        "cac:TaxScheme": {
+                            "cbc:ID": "FC"
+                        }
+                    }
+                ],
+                "cac:PartyLegalEntity": {
+                    "cbc:RegistrationName": "xr:Seller_name", // ## BT-27 Name des Verkäufers
+                    "cbc:CompanyID": "xr:Seller_legal_registration_identifier" // BT-30 Kennung der rechtlichen Registrierung des Verkäufers
+                },
+                // BT-33 Sonstige rechtliche Informationen des Verkäufers
+                "cac:Contact": {
+                    "cbc:Name": "xr:Seller_contact_point", // BT-41 Kontaktstelle des Verkäufers
+                    "cbc:Telephone": "xr:Seller_contact_telephone_number", // BT-42 Telefonnummer der Kontaktstelle des Verkäufers
+                    "cbc:ElectronicMail": "xr:Seller_contact_email_address" // BT-43 eine E-Mail-Adresse der Kontaktstelle des Verkäufers
+                }
+            }
+        },
+        "cac:AccountingCustomerParty": {
+            "cac:Party": {
+                "cbc:EndpointID": {
+                    "@schemeID": "EM",
+                    "#text": "xr:Buyer_electronic_address" // # BT-49 Elektronische Adresse des Käufers (Email-Adresse)
+                },
+                "cac:PartyName": {
+                    "cbc:Name": "xr:Buyer_trading_name" // BT-45 ein Name unter dem der Käufer bekannt ist, sofern abweichend vom Namen des Käufers (auch als Firmenname bekannt)
+                },
+                "cac:PostalAddress": {
+                    "cbc:StreetName": "xr:Buyer_address_line_1", // BT-50 Zeile 1 der Käuferanschrift
+                    // BT-51 Zeile 2 der Käuferanschrift
+                    "cbc:CityName": "xr:Buyer_city", // # BT-52 Stadt der Käuferanschrift
+                    "cbc:PostalZone": "xr:Buyer_post_code", // # BT-53 Postleitzahl der Käuferanschrift
+                    // BT-54 Region oder Bundesland der Käuferanschrift
+                    "cac:Country": {
+                        "cbc:IdentificationCode": "xr:Buyer_country_code" // ## BT-55 Ländercode der Käuferanschrift
+                    }
+                },
+                "cac:PartyIdentification": {
+                    "cbc:ID": "xr:Buyer_identifier" // BT-46 Kennung des Käufers
+                },
+                "cac:PartyTaxScheme": {
+                    "cbc:CompanyID": "xr:Buyer_VAT_identifier", // BT-48 Umsatzsteuer-Identifikationsnummer des Käufers
+                    "cac:TaxScheme": {
+                        "cbc:ID": "VAT"
+                    }
+                },
+                "cac:PartyLegalEntity": {
+                    "cbc:RegistrationName": "xr:Buyer_name", // ## BT-44 der volle Name des Käufers (rechtlicher Name)
+                    "cbc:CompanyID": "xr:Buyer_legal_registration_identifier" // BT-47 Kennung der rechtlichen Registrierung des Käufers
+                },
+                "cac:Contact": {
+                    "cbc:Name": "xr:Buyer_contact_point", // BT-56 Kontaktstelle des Käufers
+                    "cbc:Telephone": "xr:Buyer_contact_telephone_number", // BT-57 Telefonnummer der Kontaktstelle des Käufers
+                    "cbc:ElectronicMail": "xr:Buyer_contact_email_address" // BT-58 E-Mail-Adresse der Kontaktstelle des Käufers
+                }
+            }
+        },
+        // BT-59 Firmierung/Name des Zahlungsempfängers
+        // ...
+        // BT-61 Kennung der rechtlichen Registrierung des Zahlungsempfängers
+        //
+        // BT-62 Name des Steuerbevollmächtigten des Verkäufers
+        // ...
+        // BT-69 Ländercode der Steuerbevollmächtigtenanschrift
+        //
+        // BT-70 Name des Waren- oder Dienstleistungsempfängers
+        // ...
+        // BT-72 tatsächliches Lieferdatum
+        // (BT-73 siehe oben)
+        // (BT-74 siehe oben)
+        // BT-75 Zeile 1 der Lieferanschrift
+        // ...
+        // BT-80 Ländercode der Lieferanschrift
+        //
+        "cac:PaymentMeans": [
+            {
+                "cbc:PaymentMeansCode": "xr:Payment_means_type_code", // ## BT-81 Code für die Zahlungsart (58 = SEPA credit transfer, UNTDID 4461 Codeliste, https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm)
+                // BT-82 Text zur Zahlungsart
+                // BT-83 Verwendungszweck
+                "cac:PayeeFinancialAccount": {
+                    "cbc:ID": "xr:Payment_account_identifier", // ## BT-84 Kennung des Zahlungskontos (wie z. B. eine IBAN (im Falle einer SEPA-Zahlung) oder eine nationale Kontonummer)
+                    "cbc:Name": "xr:Payment_account_name", // BT-85 Name des Zahlungskontos
+                    "cac:FinancialInstitutionBranch": {
+                        "cbc:ID": "xr:Payment_service_provider_identifier" // BT-86 Kennung des Zahlungsdienstleisters (wie z. B. der BIC oder eine nationale Bankleitzahl)
+                    }
+                }
+                // BT-87 Zahlungskartennummer
+                // BT-88 Name des Zahlungskarteninhabers
+                //
+                // BT-89 Kennung der Mandatsreferenz
+                // BT-90 Kennung des Gläubigers
+                // BT-91 Kennung des zu belastenden Kontos
+            }
+        ],
+        "cac:PaymentTerms": [
+            {
+                "cbc:Note": "xr:Payment_terms" // BT-20 Zahlungsbedingungen
+            }
+        ],
+        // BT-92 bis BT-98 (BG-20) Abschläge auf Dokumentenebene
+        //
+        // BT-99 bis BT-105 (BG-21) Zuschläge auf Dokumentenebene
+        //
+        "cac:TaxTotal": {
+            "cbc:TaxAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Invoice_total_VAT_amount" // BT-110 Gesamtbetrag der Rechnungsumsatzsteuer
+            },
+            "cac:TaxSubtotal": [
+                {
+                    "cbc:TaxableAmount": {
+                        "@currencyID": "EUR",
+                        "#text": "xr:VAT_category_taxable_amount" // ## BT-116 kategoriespezifischer Steuerbasisbetrag
+                    },
+                    "cbc:TaxAmount": {
+                        "@currencyID": "EUR",
+                        "#text": "xr:VAT_category_tax_amount" // ## BT-117 kategoriespezifischer Steuerbetrag
+                    },
+                    "cac:TaxCategory": {
+                        "cbc:ID": "xr:VAT_category_code", // ## BT-118 Code der Umsatzsteuerkategorie
+                        "cbc:Percent": "xr:VAT_category_rate", // BT-119 kategoriespezifischer Umsatzsteuersatz
+                        "cac:TaxScheme": {
+                            "cbc:ID": "VAT"
+                        }
+                    },
+                    "cbc:TaxExemptionReason": "xr:VAT_exemption_reason_text", // BT-120 Umsatzsteuerbefreiungsgrund
+                    "cbc:TaxExemptionReasonCode": "xr:VAT_exemption_reason_code" // BT-121 Code für den Umsatzsteuerbefreiungsgrund
+                }
+            ]
+        },
+        "cac:LegalMonetaryTotal": {
+            "cbc:LineExtensionAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Sum_of_Invoice_line_net_amount" // ## BT-106 Summe der Nettobeträge aller Rechnungspositionen
+            },
+            "cbc:AllowanceTotalAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Sum_of_allowances_on_document_level" // BT-107 Summe der Abschläge auf Dokumentenebene
+            },
+            // BT-108 Summe der Zuschläge auf Dokumentenebene
+            "cbc:TaxExclusiveAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Invoice_total_amount_without_VAT" // ## BT-109 Rechnungsgesamtbetrag ohne Umsatzsteuer
+            },
+            // BT-110 (s.u.)
+            // BT-111 Steuergesamtbetrag in Buchungswährung
+            "cbc:TaxInclusiveAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Invoice_total_amount_with_VAT" // ## BT-112 Rechnungsgesamtbetrag einschließlich Umsatzsteuer
+            },
+            "cbc:PrepaidAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Paid_amount" // BT-113 Vorauszahlungsbetrag
+            },
+            // BT-114 Rundungsbetrag
+            "cbc:PayableAmount": {
+                "@currencyID": "EUR",
+                "#text": "xr:Amount_due_for_payment" // ## BT-115 Fälliger Zahlungsbetrag
+            }
+        },
+        "cac:InvoiceLine": [
+            {
+                "cbc:ID": "xr:Invoice_line_identifier", // ## BT-126 Kennung der Rechnungsposition (z.B. laufende Nummer)
+                "cbc:InvoicedQuantity": {
+                    "@unitCode": "xr:Invoiced_quantity_unit_of_measure_code", // ## BT-130 Code der Maßeinheit der in Rechnung gestellte Menge (DAY, HUR = Stunde, MIN = Minute, C62 = Anzahl, https://unece.org/trade/uncefact/cl-recommendations)
+                    "#text": "xr:Invoiced_quantity" // ## BT-129 in Rechnung gestellte Menge
+                },
+                "cbc:LineExtensionAmount": {
+                    "@currencyID": "EUR",
+                    "#text": "xr:Invoice_line_net_amount" // BT-131 Nettobetrag der Rechnungsposition
+                },
+                // BT-132 Referenz zur Bestellposition
+                // BT-133 Buchungsreferenz des Käufers für die Rechnungsposition
+                //
+                "cac:InvoicePeriod": {
+                    "cbc:StartDate": "xr:Invoice_line_period_start_date", // BT-134 Anfangsdatum des Rechnungspositionszeitraums
+                    "cbc:EndDate": "xr:Invoice_line_period_end_date" // BT-135 Enddatum des Rechnungspositionszeitraums
+                },
+                // BT-136 bis BT-140 (BG-28) Abschläge auf Ebene der Rechnungsposition
+                // BT-141 bis BT-145 (BG-29) Zuschläge auf Ebene der Rechnungsposition
+                //
+                "cac:Item": {
+                    "cbc:Description": "xr:Item_description", // BT-154 eine Beschreibung des Artikels
+                    "cbc:Name": "xr:Item_name", // ## BT-153 ein Name des Artikels 
+                    "cac:ClassifiedTaxCategory": {
+                        "cbc:ID": "xr:Invoiced_item_VAT_category_code", // ## BT-151 Code der Umsatzsteuerkategorie des in Rechnung gestellten Artikels
+                        "cbc:Percent": "xr:Invoiced_item_VAT_rate", // BT-152 Umsatzsteuersatz für den in Rechnung gestellten Artikel (als Prozentsatz angegeben)
+                        "cac:TaxScheme": {
+                            "cbc:ID": "VAT"
+                        }
+                    }
+                },
+                "cac:Price": {
+                    "cbc:PriceAmount": {
+                        "@currencyID": "EUR",
+                        "#text": "xr:Item_net_price" // ## BT-146 Nettopreis des Artikels
+                    }
+                    // BT-147 Nachlass auf den Artikelpreis
+                    // BT-148 Bruttopreis des Artikels
+                    // BT-149 Basismenge zum Artikelpreis
+                    // BT-150 Code der Maßeinheit der Basismenge zum Artikelpreis
+                }
+            }
+        ]
+    }
+}
