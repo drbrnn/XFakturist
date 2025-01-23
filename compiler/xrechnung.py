@@ -331,7 +331,6 @@ class XRechnung:
                         self._invoice[k] = round(decimal.Decimal(v), 2)
                     if type(v) == datetime.datetime:
                         self._invoice[k] = v.date().isoformat()
-                # print(self._invoice)
                 self._currency_id = self._invoice["xr:Invoice_currency_code"]
 
             # (2) list of invoice-line dictionaries, and, list of additional-document-reference dictionaries
@@ -396,7 +395,7 @@ class XRechnung:
 
     def write_xrechnung(self, filename: Path, debug: bool = False):
         self._prepare_xrechnung()
-        filename_json = filename.with_suffix(".json")
+        filename_json = filename.with_suffix(".xml.json")
 
         if debug or filename.suffix == ".json":
             self._logger.info(f"exporting JSON file: {filename_json}")
