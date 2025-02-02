@@ -37,10 +37,6 @@ class XRechnung:
         self._keyword_pattern = re.compile(
             r"^xr\:[A-Za-z0-9\_]+|^fakturist\:[A-Za-z\-]+"
         )
-        self._amount_keyword_pattern = re.compile(r"^xr\:[A-Za-z0-9\_]+_amount$")
-        self._decimal_number_keyword_pattern = re.compile(
-            r"^xr\:[A-Za-z0-9\_]+_amount$|^xr\:[A-Za-z0-9\_]+_price$|^xr\:[A-Za-z0-9\_]+_VAT_rate$"
-        )
 
         # data obtained from spreadsheet or JSON file
         self._currency_id = None
@@ -117,14 +113,6 @@ class XRechnung:
 
             if column_data_are_complete:
                 self._logger.info(f" > column data look acceptable")
-                decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-                for k, v in column_dict.items():
-                    if self._amount_keyword_pattern.match(k):
-                        column_dict[k] = round(decimal.Decimal(v), 2)
-                    elif self._decimal_number_keyword_pattern.match(k):
-                        column_dict[k] = decimal.Decimal(v)
-                    if type(v) == datetime.datetime:
-                        column_dict[k] = v.date().isoformat()
                 target.append(column_dict)
             else:
                 self._logger.info(f" > worksheet column skipped as data are incomplete")
@@ -331,13 +319,14 @@ class XRechnung:
         elif type(val) == dict:
             recursion_depths = self._process_dict(val, source)
             if (
-                recursion_depths == [("cbc:ID", False, 3)]
-                or target[key] == {}
+                target[key] == {}
+                or recursion_depths == [("cbc:ID", False, 3)]
                 or pd.Series(target[key].keys()).str.match(r"^@[A-Za-z]+$").all()
             ):
                 # remove sub-dictionary `target[key]` if,
-                # (a) a node is similar to an unused 'PartyTaxScheme' XML node, or,
-                # (b) a node has attributes but no (text) value
+                # (a) it is empty, or,
+                # (b) a node is similar to an unused 'PartyTaxScheme' XML node, or,
+                # (c) a node has attributes but no (text) value
                 target[key] = None
                 return []
             else:
