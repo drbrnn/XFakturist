@@ -56,6 +56,20 @@ After a complete installation, three separate **XFakturist** terminal commands a
   ```
 
 
+## Usage in automation
+
+**XFakturist** also allows for reading invoice data from a JSON file, as an alternative to the spreadsheet data import. Providing invoice data in JSON format better suits automated electronic invoice creation.
+
+```
+xr-compile invoice.json
+```
+reads invoice data from file `invoice.json`, and, creates files `invoice.xml` and `invoice.log`. 
+
+A template for an invoice data JSON file is [`template.json`](template.json) , found in the **XFakturist** top level directory. Field designations in template files [`template.json`](template.json) and [`template.xlsx`](template.xlsx) are identical.
+
+Note, that electronic invoice generation with `xr-compile` does not guarantee that the created XML file complies with the XRechnung standard. A condition for such compliance is that all mandatory invoice data are provided in a JSON file. Which data are strictly mandatory is indicated for each data field in spreadsheet file [`template.xlsx`](template.xlsx). 
+
+
 ## Installation
 
 _Currently, only macOS and Linux systems are supported. MS Windows might also work if the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install) or the [Git bash](https://git-scm.com/) are available._
