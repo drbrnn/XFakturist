@@ -27,31 +27,35 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "filename", type=Path, help="suitable XLSX workbook with invoice data"
+        "filename",
+        type=Path,
+        help="suitable XLSX workbook or JSON file with invoice data",
     )
     args = parser.parse_args()
 
-    wd = Path(args.filename).resolve().parents[0]
+    fully_qualified_path = (
+        Path(args.filename).resolve().parents[0] / Path(args.filename).name
+    )
+    if not fully_qualified_path.is_file():
+        parser.error(f"file not found: {fully_qualified_path}")
+    if not fully_qualified_path.suffix in [".xlsx", ".json"]:
+        parser.error(f"file type not supported: {fully_qualified_path.suffix}")
 
     # configure logging
-    log_file = wd / Path(args.filename.name).with_suffix(".log")
     logging.basicConfig(
-        filename=log_file,
+        filename=fully_qualified_path.with_suffix(".log"),
         filemode="w",
         format="%(asctime)s - %(name)s:%(lineno)d [%(levelname)s] - %(message)s",
         level=logging.INFO,
     )
-    logger = logging.getLogger(Path(__file__).name)
-
-    # invoice data spreadsheets
-    workbook_file = wd / Path(args.filename.name).with_suffix(".xlsx")
-    if not Path.is_file(workbook_file):
-        logger.error(f"file not found: {workbook_file}")
-        parser.error(f"file not found: {workbook_file}")
 
     xr_invoice = XRechnung()
-    xr_invoice.read_excel(workbook_file)
-    xr_invoice.write_xrechnung(args.filename.with_suffix(".xml"), debug=False)
+    if fully_qualified_path.suffix == ".xlsx":
+        xr_invoice.read_xlsx(fully_qualified_path)
+    elif fully_qualified_path.suffix == ".json":
+        xr_invoice.read_json(fully_qualified_path)
+
+    xr_invoice.write_xrechnung(fully_qualified_path.with_suffix(".xml"), debug=False)
 
 
 if __name__ == "__main__":

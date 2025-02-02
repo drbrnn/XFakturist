@@ -37,19 +37,24 @@ class XRechnung:
         self._keyword_pattern = re.compile(
             r"^xr\:[A-Za-z0-9\_]+|^fakturist\:[A-Za-z\-]+"
         )
+        self._amount_keyword_pattern = re.compile(r"^xr\:[A-Za-z0-9\_]+_amount$")
         self._decimal_number_keyword_pattern = re.compile(
             r"^xr\:[A-Za-z0-9\_]+_amount$|^xr\:[A-Za-z0-9\_]+_price$|^xr\:[A-Za-z0-9\_]+_VAT_rate$"
         )
-        self._amount_keyword_pattern = re.compile(r"^xr\:[A-Za-z0-9\_]+_amount$")
 
-        self._xrechnung = {}  # target dictionary, in a final step, exportable as XML
-
+        # data obtained from spreadsheet or JSON file
         self._currency_id = None
-        self._invoice = {}  # spreadsheet source
-        self._invoice_lines = []  # spreadsheet source
-        self._additional_document_references = []  # spreadsheet source
-        self._tax_subtotals = []  # must be calculated
+        self._invoice = {}
+        self._invoice_lines = []
+        self._additional_document_references = []
 
+        # data to be calculated
+        self._tax_subtotals = []
+
+        # final data compilation, a dictionary that can be exported as XML
+        self._xrechnung = {}
+
+        # get template file for `self._xrechnung`
         if self._json_file.exists:
             self._logger.info(
                 f"instantiating XRechnung object with template {self._json_file}"
@@ -61,6 +66,70 @@ class XRechnung:
             self._xrechnung_template = {}
 
     # ---------- ---------- private methods ---------- ----------
+
+    def _encode_binary_object(self, fq_filename: Path) -> str:
+        """Read binary file `fq_filename` and return the content as an encoded string.
+        If file `fq_filename` does not exist, return `None`.
+        """
+
+        if fq_filename.is_file():
+            with open(fq_filename, "rb") as attachment:
+                binary_object = base64.b64encode(attachment.read()).decode("utf-8")
+            self._logger.info(f" > embedding file {fq_filename}")
+            return binary_object
+        else:
+            self._logger.info(f" > file {fq_filename} not found")
+            return None
+
+    def _read_xlsx_sheet_columns(
+        self, sheet_data: pd.DataFrame, wd: Path = None
+    ) -> list:
+        """Function to loop the data columns of workbook sheets "InvoiceLines"
+        and "AdditionalDocumentReferences", and, to return a Python list of
+        invoice-line dictionaries and additional-document-reference
+        dictionaries, respectively.
+        """
+        target = []
+        value_columns = sheet_data.columns[
+            pd.Series(sheet_data.columns.str.match("^Line_|^Document_"))
+        ].to_list()
+
+        # loop all value columns of the worksheet
+        for column in value_columns:
+            column_data_are_complete = (
+                sheet_data[column].notna() | (sheet_data.Mandatory != 1)
+            ).all()
+
+            self._logger.info(f"reading '{column}'")
+            column_data = sheet_data[column].copy()
+            column_dict = column_data.loc[
+                column_data.notna() | (sheet_data.Mandatory == 1)
+            ].to_dict()
+
+            # Is there is a filename of some file to embed as a binary object?
+            if type(column_dict.get("fakturist:Filename", None)) == str:
+                column_dict["xr:Attached_document"] = self._encode_binary_object(
+                    wd / column_dict["fakturist:Filename"]
+                )
+                column_data_are_complete = (
+                    column_dict["xr:Attached_document"] is not None
+                ) and column_data_are_complete
+
+            if column_data_are_complete:
+                self._logger.info(f" > column data look acceptable")
+                decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+                for k, v in column_dict.items():
+                    if self._amount_keyword_pattern.match(k):
+                        column_dict[k] = round(decimal.Decimal(v), 2)
+                    elif self._decimal_number_keyword_pattern.match(k):
+                        column_dict[k] = decimal.Decimal(v)
+                    if type(v) == datetime.datetime:
+                        column_dict[k] = v.date().isoformat()
+                target.append(column_dict)
+            else:
+                self._logger.info(f" > worksheet column skipped as data are incomplete")
+
+        return target
 
     def _calculate_tax_total(self):
         """From list of dictionaries `self._invoice_lines` determine the list of
@@ -274,16 +343,14 @@ class XRechnung:
             return recursion_depths
 
     def _prepare_xrechnung(self) -> list:
-        """Given the invoice data that is available in private data
-        dictionaries `self._invoice`, `self._invoice_lines` and
-        `self._additional_document_references`, take the XRechnung template
-        dictionary `self._xrechnung_template` and compile internal
-        dictionary `self._xrechnung`.
+        """Based on invoice data available in private data members `self._invoice`,
+        `self._invoice_lines` and `self._additional_document_references`, compile
+        nested dictionary `self._xrechnung`.
 
-        This dictionary can immediately be converted into an XML dataset
-        or dumped as a JSON file. This member function returns a list of
-        triples, each three-tuple representing an invoice-data item that
-        was inserted into the XRechnung template dictionary.
+        This dictionary can immediately be converted into an XML dataset or dumped
+        as a JSON file. This function returns a list of triples, each three-tuple
+        representing an invoice-data item that was inserted into dictionary
+        `self._xrechnung`.
         """
 
         self._logger.info("compiling nested XRechnung dictionary from invoice data")
@@ -293,7 +360,7 @@ class XRechnung:
 
     # ---------- ---------- public methods ---------- ----------
 
-    def read_excel(self, workbook_file: Path):
+    def read_xlsx(self, workbook_file: Path):
         """Obtain invoice data from an XLSX file that has the required
         format (see the corresponding template file).
         """
@@ -318,7 +385,7 @@ class XRechnung:
             sheet_data = wb[sheet_name].copy()
             sheet_data.set_index("Keyword", inplace=True)
 
-            # (1) dictionary of general invoice data
+            # (1) general invoice data
             if sheet_name == "Invoice":
                 assert "xr:Invoice_currency_code" in sheet_data.index
                 assert "Value" in wb[sheet_name].columns
@@ -333,62 +400,68 @@ class XRechnung:
                         self._invoice[k] = v.date().isoformat()
                 self._currency_id = self._invoice["xr:Invoice_currency_code"]
 
-            # (2) list of invoice-line dictionaries, and, list of additional-document-reference dictionaries
-            elif sheet_name in ["InvoiceLines", "AdditionalDocumentReferences"]:
-                dd = (
-                    self._invoice_lines
-                    if sheet_name == "InvoiceLines"
-                    else self._additional_document_references
+            # (2) invoice lines
+            elif sheet_name == "InvoiceLines":
+                self._invoice_lines = self._read_xlsx_sheet_columns(sheet_data)
+
+            # (3) additional document references
+            elif sheet_name == "AdditionalDocumentReferences":
+                self._additional_document_references = self._read_xlsx_sheet_columns(
+                    sheet_data, workbook_file.parent
                 )
-                value_columns = sheet_data.columns[
-                    pd.Series(sheet_data.columns.str.match("^Line_|^Document_"))
-                ]
 
-                # loop all value columns of the worksheet
-                for column in value_columns.to_list():
-                    column_data_is_complete = (
-                        sheet_data[column].notna() | (sheet_data.Mandatory != 1)
-                    ).all()
-                    self._logger.info(f"reading '{column}'")
-                    column_data = sheet_data[column].copy()
-                    column_dict = column_data.loc[
-                        column_data.notna() | (sheet_data.Mandatory == 1)
-                    ].to_dict()
+        self._calculate_tax_total()
+        self._calculate_monetary_total()
 
-                    # Is there is a filename of some file to embed as a binary object?
-                    if (
-                        "fakturist:Filename" in column_dict.keys()
-                        and type(column_dict["fakturist:Filename"]) == str
-                        and column_dict["fakturist:Filename"] is not None
-                    ):
-                        attachment_file: Path = (
-                            workbook_file.parent / column_dict["fakturist:Filename"]
-                        )
-                        if attachment_file.is_file():
-                            with open(attachment_file, "rb") as attachment:
-                                column_dict["xr:Attached_document"] = base64.b64encode(
-                                    attachment.read()
-                                ).decode("utf-8")
-                            self._logger.info(
-                                f" > embedding file {column_dict['fakturist:Filename']}"
-                            )
-                        else:
-                            self._logger.info(
-                                f" > column skipped, file {column_dict['fakturist:Filename']} not found"
-                            )
-                            continue
+    def read_json(self, json_file: Path):
+        """Obtain invoice data from a JSON file that has the required
+        format (see the corresponding template file).
+        """
 
-                    if column_data_is_complete:
-                        self._logger.info(f" > column imported as data look acceptable")
-                        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-                        for k, v in column_dict.items():
-                            if self._decimal_number_keyword_pattern.match(k):
-                                column_dict[k] = round(decimal.Decimal(v), 2)
-                            if type(v) == datetime.datetime:
-                                column_dict[k] = v.date().isoformat()
-                        dd.append(column_dict)
-                    else:
-                        self._logger.info(f" > column skipped as data are incomplete")
+        self._logger.info(f"reading invoice data file: {json_file}")
+        self._invoice.clear()
+        with open(json_file, "r", encoding="utf-8") as f:
+            self._invoice = json.load(f)
+            self._invoice = {k: v for k, v in self._invoice.items() if v is not None}
+
+        # (1) invoice currency
+        self._currency_id = self._invoice.get("xr:Invoice_currency_code", "EUR")
+
+        # (2) invoice-lines
+        self._invoice_lines = [
+            {k: v for k, v in invoice_line.items() if v is not None}
+            for invoice_line in self._invoice.pop("InvoiceLines", [])
+        ]
+        self._logger.info(f"found {len(self._invoice_lines)} invoice line(s)")
+
+        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+        for invoice_line in self._invoice_lines:
+            for k, v in invoice_line.items():
+                if self._amount_keyword_pattern.match(k):
+                    invoice_line[k] = round(decimal.Decimal(v), 2)
+                elif self._decimal_number_keyword_pattern.match(k):
+                    invoice_line[k] = decimal.Decimal(v)
+
+        # (3) additional document references
+        self._additional_document_references = [
+            {k: v for k, v in adr.items() if v is not None}
+            for adr in self._invoice.pop("AdditionalDocumentReferences", [])
+        ]
+        self._logger.info(
+            f"found {len(self._additional_document_references)} reference(s)"
+        )
+        for adr in self._additional_document_references:
+            # Is there is a filename of some file to embed as a binary object?
+            if type(adr.get("fakturist:Filename", None)) == str:
+                adr["xr:Attached_document"] = self._encode_binary_object(
+                    json_file.parent / adr["fakturist:Filename"]
+                )
+                if adr["xr:Attached_document"] is None:
+                    self._logger.info(f" > reference skipped as data are incomplete")
+                    adr = None
+        self._additional_document_references = [
+            adr for adr in self._additional_document_references if adr is not None
+        ]
 
         self._calculate_tax_total()
         self._calculate_monetary_total()
