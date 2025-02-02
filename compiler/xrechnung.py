@@ -131,6 +131,37 @@ class XRechnung:
 
         return target
 
+    def _harmonise_imported_data(self):
+        """Method to cast the data type of numerical data to `decimal.Decimal`,
+        and, the data of type `datetime.datetime` to ISO formatted date
+        strings. This method affects private members `self._invoice` and
+        `self._invoice_lines`.
+
+        Invoice (line) monetary amounts are always rounded to two decimal places.
+        Item price figures can have more that two decimal figures and should be
+        represented by decimal numbers with at least two decimal figures.
+        """
+
+        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+
+        amount_keyword_pattern = re.compile(r"^xr\:[A-Za-z0-9\_]+_amount$")
+        price_keyword_pattern = re.compile(r"^xr\:[A-Za-z0-9\_]+_price$")
+        other_decimal_keyword_pattern = re.compile(
+            r"^xr\:[A-Za-z0-9\_]+_VAT_rate$|^xr\:[A-Za-z0-9\_]+_quantity$"
+        )
+        for d in [self._invoice] + self._invoice_lines:
+            for k, v in d.items():
+                if type(v) == datetime.datetime:
+                    d[k] = v.date().isoformat()
+                elif amount_keyword_pattern.match(k):
+                    d[k] = round(decimal.Decimal(v), 2)
+                elif price_keyword_pattern.match(k):
+                    d[k] = decimal.Decimal(v)
+                    if d[k].as_tuple().exponent > -2:
+                        d[k] = round(d[k], 2)
+                elif other_decimal_keyword_pattern.match(k):
+                    d[k] = decimal.Decimal(v)
+
     def _calculate_tax_total(self):
         """From list of dictionaries `self._invoice_lines` determine the list of
         dictionaries `self._tax_subtotals`, and, add key 'xr:Invoice_total_VAT_amount'
@@ -196,7 +227,7 @@ class XRechnung:
         assert "xr:Sum_of_Invoice_line_net_amount" in self._invoice
         assert "xr:Invoice_total_VAT_amount" in self._invoice
 
-        # BT-106 Summe der Nettobeträge aller Rechnungspositionen"
+        # BT-106 Summe der Nettobeträge aller Rechnungspositionen
         sum_of_invoice_line_net_amounts = decimal.Decimal(
             self._invoice.get("xr:Sum_of_Invoice_line_net_amount")
         )
@@ -361,7 +392,7 @@ class XRechnung:
     # ---------- ---------- public methods ---------- ----------
 
     def read_xlsx(self, workbook_file: Path):
-        """Obtain invoice data from an XLSX file that has the required
+        """Obtain invoice data from an XLSX workbook file, which has the required
         format (see the corresponding template file).
         """
 
@@ -387,18 +418,10 @@ class XRechnung:
 
             # (1) general invoice data
             if sheet_name == "Invoice":
-                assert "xr:Invoice_currency_code" in sheet_data.index
                 assert "Value" in wb[sheet_name].columns
                 sheet_data = sheet_data[sheet_data.Value.notna()]
                 self._invoice = sheet_data["Value"].to_dict()
-
-                decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-                for k, v in self._invoice.items():
-                    if self._amount_keyword_pattern.match(k):
-                        self._invoice[k] = round(decimal.Decimal(v), 2)
-                    if type(v) == datetime.datetime:
-                        self._invoice[k] = v.date().isoformat()
-                self._currency_id = self._invoice["xr:Invoice_currency_code"]
+                self._currency_id = self._invoice.get("xr:Invoice_currency_code", "EUR")
 
             # (2) invoice lines
             elif sheet_name == "InvoiceLines":
@@ -410,6 +433,7 @@ class XRechnung:
                     sheet_data, workbook_file.parent
                 )
 
+        self._harmonise_imported_data()
         self._calculate_tax_total()
         self._calculate_monetary_total()
 
@@ -427,20 +451,12 @@ class XRechnung:
         # (1) invoice currency
         self._currency_id = self._invoice.get("xr:Invoice_currency_code", "EUR")
 
-        # (2) invoice-lines
+        # (2) invoice lines
         self._invoice_lines = [
             {k: v for k, v in invoice_line.items() if v is not None}
             for invoice_line in self._invoice.pop("InvoiceLines", [])
         ]
         self._logger.info(f"found {len(self._invoice_lines)} invoice line(s)")
-
-        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-        for invoice_line in self._invoice_lines:
-            for k, v in invoice_line.items():
-                if self._amount_keyword_pattern.match(k):
-                    invoice_line[k] = round(decimal.Decimal(v), 2)
-                elif self._decimal_number_keyword_pattern.match(k):
-                    invoice_line[k] = decimal.Decimal(v)
 
         # (3) additional document references
         self._additional_document_references = [
@@ -463,6 +479,7 @@ class XRechnung:
             adr for adr in self._additional_document_references if adr is not None
         ]
 
+        self._harmonise_imported_data()
         self._calculate_tax_total()
         self._calculate_monetary_total()
 
