@@ -16,7 +16,7 @@ Currently, **XFakturist** is a simple but functional tool, mostly written in Pyt
 
 **XFakturist** comes **without any warranty**. You may use it at your own risk. In particular, users assume full responsibility for the correctness of invoice data and monetary amounts contained in the final XML file. Furthermore, creating an XML file with **XFakturist** does not automatically guarantee compliance with the [XRechnung](https://xeinkauf.de/xrechnung/) standard, as this also depends on the invoice data that you are feeding into the XML creation process.
 
-Users may want to check compliance with third-party software, for example, by employing the stand-alone and open-source [validation and visualisation software](https://github.com/itplr-kosit) published by the German governments' [Coordination Office for IT Standards](https://www.xoev.de/) (KoSIT). **XFakturist** offers a simple installation method for these KoSIT tools as well as a basic command-line interface to use them.
+Users may want to check compliance with third-party software, for example, by employing the stand-alone and open-source [validation and visualisation software](https://github.com/itplr-kosit) published by the German governments' [Coordination Office for IT Standards](https://www.xoev.de/) (KoSIT). **XFakturist** offers a simple installation method for these KoSIT tools as well as a basic command-line interface to use them. For XRechnung visualisation, without validation, the [E-Rechnung web application](https://www.elster.de/eportal/e-rechnung) of the German federal tax administration's [ELSTER](https://www.elster.de/) website is an alternative.
 
 
 ## Project rationale
