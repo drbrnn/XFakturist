@@ -1,3 +1,5 @@
+> [Link zum deutschen Text](README_de.md)
+
 # XFakturist
 
 Minimalist stand-alone XRechnung generator
@@ -16,7 +18,7 @@ Currently, **XFakturist** is a simple but functional tool, mostly written in Pyt
 
 **XFakturist** comes **without any warranty**. You may use it at your own risk. In particular, users assume full responsibility for the correctness of invoice data and monetary amounts contained in the final XML file. Furthermore, creating an XML file with **XFakturist** does not automatically guarantee compliance with the [XRechnung](https://xeinkauf.de/xrechnung/) standard, as this also depends on the invoice data that you are feeding into the XML creation process.
 
-Users may want to check compliance with third-party software, for example, by employing the stand-alone and open-source [validation and visualisation software](https://github.com/itplr-kosit) published by the German governments' [Coordination Office for IT Standards](https://www.xoev.de/) (KoSIT). **XFakturist** offers a simple installation method for these KoSIT tools as well as a basic command-line interface to use them. For XRechnung visualisation, without validation, the [E-Rechnung web application](https://www.elster.de/eportal/e-rechnung) of the German federal tax administration's [ELSTER](https://www.elster.de/) website is an alternative.
+Users may want to check compliance with third-party software, for example, by employing the stand-alone and open-source [validation and visualisation software](https://github.com/itplr-kosit) published by the German governments' [Coordination Office for IT Standards](https://www.xoev.de/) (KoSIT). **XFakturist** offers a simple installation method for these KoSIT tools as well as a basic command-line interface to use them.
 
 
 ## Project rationale
@@ -74,7 +76,7 @@ Note, that electronic invoice generation with `xr-compile` does not guarantee th
 
 _Currently, only macOS and Linux systems are supported. MS Windows might also work if the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install) or the [Git bash](https://git-scm.com/) are available._
 
-### Python tool `xr-compile`
+### Python script `xr-compile`
 
 Python (version 3.10 or later) must be installed on your system, for example, a current [Anaconda distribution](https://www.anaconda.com/download). Among the required Python packages, we highlight the following ones, which might require upgrading your Python installation:
 ```
@@ -86,13 +88,13 @@ XML electronic invoice creation with command `xr-compile` only requires a Python
 
 ### KoSIT software installation
 
-To run the [KoSIT validation and visualisation software](https://github.com/itplr-kosit), a recent version of a Java runtime environment is required, for example [Eclipse Temurin JRE](https://adoptium.net/de/temurin/releases/).
+To run the [KoSIT validation and visualisation software](https://github.com/itplr-kosit), a recent version of a Java runtime environment is required, for example [Eclipse Temurin JRE](https://adoptium.net/en/temurin/releases/).
 
 **XFakturist** offers the shell scripts `xr-validate` and `xr-convert` to run the [KoSIT software](https://github.com/itplr-kosit). Make sure that these scripts are in your search path. 
 
 KoSIT software is not included in **XFakturist**. It must be downloaded and installed separately. To simplify this installation process, **XFakturist** provides shell script `get-kosit-xr`. Run this script from the top-level **XFakturist** directory. It downloads and unpacks three different [KoSIT software packages](https://github.com/itplr-kosit) as well as two software dependencies, [Saxonica Saxon Home Edition](https://github.com/Saxonica/Saxon-HE/) and [Apache Formatting Objects Processor](https://xmlgraphics.apache.org/fop/). 
 
-Four of these five packages are licensed by their respective vendors under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html). Software firm [Saxonica](https://www.saxonica.com/) also distributes its _Saxon Home Edition_ as [open source software](https://saxonica.plan.io/projects/saxonmirrorhe).
+Four of these five packages were licensed by their respective vendors under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html). Software firm [Saxonica](https://www.saxonica.com/) also distributed its _Saxon Home Edition_ as [open source software](https://saxonica.plan.io/projects/saxonmirrorhe).
 
 After running installation script `get-kosit-xr`, **XFakturist** shell scripts, `xr-validate` and `xr-convert`, should be functional.
 
@@ -103,9 +105,9 @@ After running installation script `get-kosit-xr`, **XFakturist** shell scripts, 
 
 As of 1 January 2025, the German VAT Act ([Umsatzsteuergesetz](https://www.gesetze-im-internet.de/ustg_1980/index.html)) includes a [definition of an _electronic_ invoice](https://www.gesetze-im-internet.de/ustg_1980/__14.html): an invoice that is issued, transmitted and received in an electronic and structured data format. Such a format must facilitate automatic and electronic processing of invoice data. Compliance of an invoice with [European Union Directive 2014/55/EU](https://eur-lex.europa.eu/eli/dir/2014/55/oj/eng), which implicitly endorses the European standard [EN 16931](https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/Obtaining+a+copy+of+the+European+standard+on+eInvoicing), will perhaps be the most common approach to satisfy the basic legal requirements of the German VAT Act. Note that the [XRechnung](https://xeinkauf.de/xrechnung/) standard builds on and extends European standard [EN 16931](https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/Obtaining+a+copy+of+the+European+standard+on+eInvoicing).
 
-In an [official announcement](https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/2024-10-15-einfuehrung-e-rechnung.html) of 15 October 2024, the Federal Ministry of Finance offered advice regarding the introduction of mandatory electronic invoicing of domestic business-to-business transactions, which started in Germany in 2025. The announcement states that, for VAT purposes, compliance with the [XRechnung](https://xeinkauf.de/xrechnung/) standard will classify respective XML data as an _electronic invoice_ in accordance with the law.
+An [official announcement](https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/Umsatzsteuer-Anwendungserlass/2025-10-15-einfuehrung-obligatorische-e-rechnung.html) of the Federal Ministry of Finance, of 15 October 2025, which modified an earlier Application Decree of the Federal Ministry dated 15 October 2024, specified details of the introduction of mandatory electronic invoicing of domestic business-to-business transactions, applicable in Germany as of 1 January 2025. Both documents stated that, for VAT purposes, compliance with the [XRechnung](https://xeinkauf.de/xrechnung/) standard will classify respective XML data as an _electronic invoice_ in accordance with the law.
 
-For that reason, **XFakturist** was designed to generate _electronic invoices_ that employ the [XRechnung](https://xeinkauf.de/xrechnung/) standard.
+For that reason, in late 2024, **XFakturist** was designed to generate _electronic invoices_ that employ the [XRechnung](https://xeinkauf.de/xrechnung/) standard.
 
 
 ## License
