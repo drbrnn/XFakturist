@@ -55,12 +55,12 @@
 #
 # see also: https://github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/docs/usage.md
 
-KOSIT_VALIDATOR_VERSION="1.5.0"
-KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2024-10-31"
-KOSIT_VISUALIZATION_VERSION="2024-06-20"
+KOSIT_VALIDATOR_VERSION="1.6.0"
+KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2025-07-10"
+KOSIT_VISUALIZATION_VERSION="2025-07-10"
 KOSIT_XRECHNUNG_STANDARD="3.0.2"
-SAXON_RELEASE="12-5"
-FOP_VERSION="2.10"
+SAXON_RELEASE="12-9"
+FOP_VERSION="2.11"
 
 
 # (-1-) specify download locations of ZIP files from KoSIT et al.
@@ -71,7 +71,7 @@ FOP_VERSION="2.10"
 # [4] Saxonica Saxon Home Edition Java archive (in particular, for the XSL translations required for visualisation)
 # [5] Apache Formatting Objects Processor (FOP)
 
-ZIPFILE_NAMES[1]="validator-${KOSIT_VALIDATOR_VERSION}-distribution"
+ZIPFILE_NAMES[1]="validator-${KOSIT_VALIDATOR_VERSION}"
 ZIPFILE_NAMES[2]="validator-configuration-xrechnung_${KOSIT_XRECHNUNG_STANDARD}_${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
 # - ZIPFILE_NAMES[3]="xrechnung-${KOSIT_XRECHNUNG_STANDARD}-xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
 ZIPFILE_NAMES[3]="xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
@@ -106,7 +106,7 @@ done
 
 cd kosit-xr
 
-ln -f -s ${ZIPFILE_NAMES[1]}/validationtool-${KOSIT_VALIDATOR_VERSION}-standalone.jar validationtool.jar
+ln -f -s ${ZIPFILE_NAMES[1]}/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar validator.jar
 ln -f -s ${ZIPFILE_NAMES[2]} validator-configuration
 mv ${ZIPFILE_NAMES[3]}/*/* ${ZIPFILE_NAMES[3]}/
 ln -f -s ${ZIPFILE_NAMES[3]}/conf conf

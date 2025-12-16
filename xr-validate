@@ -72,7 +72,7 @@ fi
 
 KOSIT_DIR="$(dirname ${SCRIPT})/kosit-xr"
 
-java -jar ${KOSIT_DIR}/validationtool.jar \
+java -jar ${KOSIT_DIR}/validator.jar \
      -s ${KOSIT_DIR}/validator-configuration/scenarios.xml \
      -r ${KOSIT_DIR}/validator-configuration \
      -h ${INVOICE}
