@@ -47,6 +47,8 @@ do
     fi
 done
 
+KOSIT_DIR="$(cd "$(dirname "${SCRIPT}")" && pwd -P)/kosit-xr"
+
 
 # (-2-) get invoice file name (1st script parameter)
 
@@ -69,8 +71,6 @@ fi
 
 
 # (-3-) run the KoSIT validator
-
-KOSIT_DIR="$(dirname ${SCRIPT})/kosit-xr"
 
 java -jar ${KOSIT_DIR}/validator.jar \
      -s ${KOSIT_DIR}/validator-configuration/scenarios.xml \
