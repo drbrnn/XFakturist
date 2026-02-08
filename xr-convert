@@ -43,22 +43,31 @@ do
         SCRIPT=`dirname "$SCRIPT"`/"$LINK"
     fi
 done
-KOSIT_DIR="$(dirname ${SCRIPT})/kosit-xr"
+
+KOSIT_DIR="$(cd "$(dirname "${SCRIPT}")" && pwd -P)/kosit-xr"
 
 
-# (-2-) get invoice file name; check XML file existence;
-#       get optional language parameter
+# (-2-) get invoice file name and optional language parameter;
+#       check (for) XML file;
 
 INVOICE=$1
 XR_LANG=$(echo $2 | awk '{ print tolower($0) }')
 if [ ! "${XR_LANG}" = "en" ] ; then XR_LANG="de" ; fi
+HAS_XMLLINT=$(command -v xmllint >/dev/null 2>&1 && echo true || echo false)
 
 ERROR=""
-if [ -z "${INVOICE}" ] ; then
-    ERROR="usage: $(basename $0) <XML electronic invoice file> [de|en]"
-elif [ ! -f "${INVOICE}" ] ; then
-    ERROR="${INVOICE} - invoice file does not exist"
-elif [ -z "$(head -n1 ${INVOICE} | awk '/.\?xml version=\"1.0\" .*\?./')" ] ; then
+if [[ -z ${INVOICE} ]] ; then
+    ERROR="usage: $(basename "$0") <XML electronic invoice file> [de|en]"
+elif [[ ! -f ${INVOICE} ]] ; then
+    ERROR="${INVOICE} does not exist"
+elif [[ $HAS_XMLLINT == true ]] && ! xmllint --noout "$INVOICE" >/dev/null 2>&1 ; then
+    # proper XML check
+    ERROR="${INVOICE} is not a valid XML file"
+elif [[ $HAS_XMLLINT == false ]] && ! [[ \
+        $(head -n1 "$INVOICE") =~ \
+        [[:space:]]*\<\?xml[[:space:]]+version[[:space:]]*=[[:space:]]*(\"1\.0\"|\'1\.0\')[^?]*\?\> \
+    ]] ; then
+    # fallback XML check
     ERROR="${INVOICE} is not an XML file"
 fi
 
@@ -149,9 +158,6 @@ sh ${KOSIT_DIR}/fop/fop \
     -c ${KOSIT_DIR}/conf/fop.xconf \
     -fo ${INVOICE_FO} \
     -pdf ${INVOICE_PDF}
-
-    # -l $(echo ${XR_LANG} | awk '{ print toupper($0) }') \
-    # -cache ${KOSIT_DIR}/xrechnung-visualization-2024-06-20/conf
 
 
 # (-6-) clean-up
