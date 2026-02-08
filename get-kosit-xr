@@ -20,8 +20,10 @@
 
 # purpose:  Download all required software components for electronic invoice
 #           validation and visualisation, copy all files to directory `kosit-xr`
-#           and create a few symbolic links. Software downloaded to the `kosit-xr`
-#           directory is required to run the following shell scripts:
+#           rename directories and create a few symbolic links.
+#
+#           The following terminal commands depend on software downloaded to
+#           directory `kosit-xr`:
 #
 #               xr-validate   : check hundreds of XML invoice validation rules
 #                               and create a corresponding validation report,
@@ -31,11 +33,13 @@
 #                               PDF files to display the information content of
 #                               an XML invoice
 #
-#           Downloaded software libraries are provided by German government
-#           authorities "Institut für IT-Standardisierung – Koordinierungsstelle
-#           für IT-Standards für den Bund und die Länder" (KoSIT), "Kassen- und
-#           Rechnungswesen des Bundes" (KKR), British software firm Saxonica 
-#           and the Apache foundation.
+#           The downloaded software libraries are provided and licensed
+#           to the end user by the following entities: the German government
+#           authorities “Institut für IT-Standardisierung – Koordinierungsstelle
+#           für IT-Standards für den Bund und die Länder” (KoSIT), “Kassen- und
+#           Rechnungswesen des Bundes” (KKR), the British software firm Saxonica,
+#           and the Apache Foundation.
+#           
 
 # to update the variables below, check for KoSIT updates here:
 #
@@ -55,9 +59,9 @@
 #
 # see also: https://github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/docs/usage.md
 
-KOSIT_VALIDATOR_VERSION="1.6.0"
-KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2025-07-10"
-KOSIT_VISUALIZATION_VERSION="2025-07-10"
+KOSIT_VALIDATOR_VERSION="1.6.1"
+KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2026-01-31"
+KOSIT_VISUALIZATION_VERSION="2026-01-31"
 KOSIT_XRECHNUNG_STANDARD="3.0.2"
 SAXON_RELEASE="12-9"
 FOP_VERSION="2.11"
@@ -72,18 +76,15 @@ FOP_VERSION="2.11"
 # [5] Apache Formatting Objects Processor (FOP)
 
 ZIPFILE_NAMES[1]="validator-${KOSIT_VALIDATOR_VERSION}"
-ZIPFILE_NAMES[2]="validator-configuration-xrechnung_${KOSIT_XRECHNUNG_STANDARD}_${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
-# - ZIPFILE_NAMES[3]="xrechnung-${KOSIT_XRECHNUNG_STANDARD}-xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
+ZIPFILE_NAMES[2]="xrechnung-${KOSIT_XRECHNUNG_STANDARD}-validator-configuration-${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
 ZIPFILE_NAMES[3]="xrechnung-visualization-${KOSIT_VISUALIZATION_VERSION}"
 ZIPFILE_NAMES[4]="SaxonHE${SAXON_RELEASE}J"
 ZIPFILE_NAMES[5]="fop-${FOP_VERSION}-bin"
 
 URL_BASENAMES[1]="https://github.com/itplr-kosit/validator/releases/download/v${KOSIT_VALIDATOR_VERSION}"
-URL_BASENAMES[2]="https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/release-${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}"
-# - URL_BASENAMES[3]="https://github.com/itplr-kosit/xrechnung-visualization/releases/download/v${KOSIT_VISUALIZATION_VERSION}"
+URL_BASENAMES[2]="https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/v${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}/"
 URL_BASENAMES[3]="https://projekte.kosit.org/xrechnung/xrechnung-visualization/-/archive/v${KOSIT_VISUALIZATION_VERSION}"
 URL_BASENAMES[4]="https://github.com/Saxonica/Saxon-HE/releases/download/SaxonHE${SAXON_RELEASE}"
-# - URL_BASENAMES[5]="https://archive.apache.org/dist/xmlgraphics/fop/binaries"
 URL_BASENAMES[5]="https://dlcdn.apache.org/xmlgraphics/fop/binaries"
 
 
@@ -95,23 +96,30 @@ if [ ! -d downloads ] ; then mkdir downloads ; fi
 
 for i in 1 2 3 4 5
 do
-    curl -L ${URL_BASENAMES[i]}/${ZIPFILE_NAMES[i]}.zip --output downloads/${ZIPFILE_NAMES[i]}.zip
     # FIXME: add hash sum or signature checks to verify integrity of downloads
 
+    curl -L ${URL_BASENAMES[i]}/${ZIPFILE_NAMES[i]}.zip --output downloads/${ZIPFILE_NAMES[i]}.zip
     unzip downloads/${ZIPFILE_NAMES[i]}.zip -d kosit-xr/${ZIPFILE_NAMES[i]}
+
+    # as of Feb 2026, the validator standalone JAR was removed from the ZIP file
+    if [ $i == 1 ] ; then
+        S_JAR="${ZIPFILE_NAMES[1]}-standalone.jar"
+        curl -L ${URL_BASENAMES[1]}/${S_JAR} --output downloads/${S_JAR}
+        cp -p downloads/${S_JAR} kosit-xr/${ZIPFILE_NAMES[i]}/
+    fi
 done
 
 
-# (-3-) create generic-name soft links
+# (-3-) create generic-name directories and soft links
 
 cd kosit-xr
 
 ln -f -s ${ZIPFILE_NAMES[1]}/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar validator.jar
 ln -f -s ${ZIPFILE_NAMES[2]} validator-configuration
 mv ${ZIPFILE_NAMES[3]}/*/* ${ZIPFILE_NAMES[3]}/
-ln -f -s ${ZIPFILE_NAMES[3]}/conf conf
-ln -f -s ${ZIPFILE_NAMES[3]}/src/xsl xsl
-ln -f -s ${ZIPFILE_NAMES[3]}/src/xsd xsd
+mv ${ZIPFILE_NAMES[3]}/conf conf
+mv ${ZIPFILE_NAMES[3]}/src/xsl xsl
+mv ${ZIPFILE_NAMES[3]}/src/xsd xsd
 ln -f -s ${ZIPFILE_NAMES[4]}/saxon-he-$(echo ${SAXON_RELEASE} | sed 's/-/./').jar saxon-he.jar
 mv ${ZIPFILE_NAMES[5]}/*/* ${ZIPFILE_NAMES[5]}/
-ln -f -s ${ZIPFILE_NAMES[5]}/fop fop
+mv ${ZIPFILE_NAMES[5]}/fop fop
