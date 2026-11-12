@@ -29,7 +29,9 @@
 
 # (-1-) determine true script directory: resolve (multiple) soft link(s)
 
-XR_TEMP_DIR="/var/tmp" # system specific directory for temporary files
+# private per-run directory for temporary files, removed on any exit
+XR_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/xfakturist.XXXXXX")" || exit 1
+trap 'rm -rf "${XR_TEMP_DIR}"' EXIT
 
 SCRIPT="$0"
 while [ -h "$SCRIPT" ]
@@ -125,44 +127,42 @@ INVOICE_TMP="${XR_TEMP_DIR}/${INVOICE_BASENAME}.xr.xml"
 # java -jar ${KOSIT_DIR}/saxon-he.jar \
 #     -xsl:${KOSIT_DIR}/xsl/ubl-invoice-xr.xsl \
 #     -s:${INVOICE} -o:${INVOICE_TMP}
-java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
-     -xsl:${XSL_SCRIPT} \
-     -s:${INVOICE} \
-     -o:${INVOICE_TMP}
+java -cp "${KOSIT_DIR}/saxon-he.jar" net.sf.saxon.Transform \
+     "-xsl:${XSL_SCRIPT}" \
+     "-s:${INVOICE}" \
+     "-o:${INVOICE_TMP}"
 
 
 # (-4-) visualisation: HTML format
 
 INVOICE_HTML="${INVOICE_BASENAME}_converted_${XR_LANG}.html"
-java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
-     -xsl:${KOSIT_DIR}/xsl/xrechnung-html.xsl \
-     -s:${INVOICE_TMP} \
-     -o:${INVOICE_HTML} \
+java -cp "${KOSIT_DIR}/saxon-he.jar" net.sf.saxon.Transform \
+     "-xsl:${KOSIT_DIR}/xsl/xrechnung-html.xsl" \
+     "-s:${INVOICE_TMP}" \
+     "-o:${INVOICE_HTML}" \
      lang="${XR_LANG}"
 
 
 # (-5-) visualisation: PDF format
 
 INVOICE_FO="${XR_TEMP_DIR}/${INVOICE_BASENAME}.fo"
-java -cp ${KOSIT_DIR}/saxon-he.jar net.sf.saxon.Transform \
-     -xsl:${KOSIT_DIR}/xsl/xr-pdf.xsl \
-     -s:${INVOICE_TMP} \
-     -o:${INVOICE_FO} \
+java -cp "${KOSIT_DIR}/saxon-he.jar" net.sf.saxon.Transform \
+     "-xsl:${KOSIT_DIR}/xsl/xr-pdf.xsl" \
+     "-s:${INVOICE_TMP}" \
+     "-o:${INVOICE_FO}" \
     lang="${XR_LANG}" \
     fop.extensions="fop"
     # invoiceline-layout="tabular" \
 
-ln -s ${KOSIT_DIR}/conf/fonts ${XR_TEMP_DIR}/fonts
+ln -s "${KOSIT_DIR}/conf/fonts" "${XR_TEMP_DIR}/fonts"
 INVOICE_PDF="${INVOICE_BASENAME}_converted_${XR_LANG}.pdf"
-sh ${KOSIT_DIR}/fop/fop \
-    -c ${KOSIT_DIR}/conf/fop.xconf \
-    -fo ${INVOICE_FO} \
-    -pdf ${INVOICE_PDF}
+sh "${KOSIT_DIR}/fop/fop" \
+    -c "${KOSIT_DIR}/conf/fop.xconf" \
+    -fo "${INVOICE_FO}" \
+    -pdf "${INVOICE_PDF}"
 
 
-# (-6-) clean-up
-
-rm ${INVOICE_TMP} ${INVOICE_FO} ${XR_TEMP_DIR}/fonts
+# (-6-) clean-up: temporary files are removed by the EXIT trap (see step 1)
 
 # USAGE
 # fop [options] [-fo|-xml] infile [-xsl file] [-awt|-pdf|-mif|-rtf|-tiff|-png|-pcl|-ps|-txt|-at [mime]|-print] <outfile>
