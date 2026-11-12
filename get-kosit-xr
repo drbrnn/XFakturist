@@ -54,16 +54,17 @@
 #
 # to update the variables below, check for APACHE FOP updates here:
 #
-#   https://www.apache.org/dyn/closer.cgi/xmlgraphics/fop
-#   https://dlcdn.apache.org/xmlgraphics/fop/binaries/
+#   https://xmlgraphics.apache.org/fop/download.html
+#   https://archive.apache.org/dist/xmlgraphics/fop/binaries/
+#   (dlcdn.apache.org keeps only the newest release, so pinned versions break there)
 #
 # see also: https://github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/docs/usage.md
 
-KOSIT_VALIDATOR_VERSION="1.6.1"
-KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2026-01-31"
-KOSIT_VISUALIZATION_VERSION="2026-01-31"
+KOSIT_VALIDATOR_VERSION="1.6.3"
+KOSIT_VALIDATOR_CONFIGURATION_RELEASE="2026-08-31"
+KOSIT_VISUALIZATION_VERSION="2026-10-13"
 KOSIT_XRECHNUNG_STANDARD="3.0.2"
-SAXON_RELEASE="12-9"
+SAXON_RELEASE="12-10"
 FOP_VERSION="2.11"
 
 
@@ -85,7 +86,7 @@ URL_BASENAMES[1]="https://github.com/itplr-kosit/validator/releases/download/v${
 URL_BASENAMES[2]="https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/v${KOSIT_VALIDATOR_CONFIGURATION_RELEASE}/"
 URL_BASENAMES[3]="https://projekte.kosit.org/xrechnung/xrechnung-visualization/-/archive/v${KOSIT_VISUALIZATION_VERSION}"
 URL_BASENAMES[4]="https://github.com/Saxonica/Saxon-HE/releases/download/SaxonHE${SAXON_RELEASE}"
-URL_BASENAMES[5]="https://dlcdn.apache.org/xmlgraphics/fop/binaries"
+URL_BASENAMES[5]="https://archive.apache.org/dist/xmlgraphics/fop/binaries"
 
 
 # (-2-) download ZIP files
