@@ -82,6 +82,7 @@ Python (version 3.10 or later) must be installed on your system, for example, a 
 ```
 json5
 openpyxl
+pandas
 xmltodict
 ```
 XML electronic invoice creation with command `xr-compile` only requires a Python installation on your computer, and, fairly standard as well as the above listed Python packages. Download and unpack the **XFakturist** ZIP-file or clone the **XFakturist** Github repository. Make sure that Python script `xr-compile` is in your search path.

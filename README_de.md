@@ -78,6 +78,7 @@ Für die Nutzung von **XFakturist** ist eine Python-Installation (Version 3.10 o
 ```
 json5
 openpyxl
+pandas
 xmltodict
 ```
 
