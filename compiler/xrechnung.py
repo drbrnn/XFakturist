@@ -51,7 +51,7 @@ class XRechnung:
         self._xrechnung = {}
 
         # get template file for `self._xrechnung`
-        if self._json_file.exists:
+        if self._json_file.exists():
             self._logger.info(
                 f"instantiating XRechnung object with template {self._json_file}"
             )
