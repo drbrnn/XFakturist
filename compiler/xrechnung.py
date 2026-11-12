@@ -455,18 +455,18 @@ class XRechnung:
         self._logger.info(
             f"found {len(self._additional_document_references)} reference(s)"
         )
+        complete_references = []
         for adr in self._additional_document_references:
-            # Is there is a filename of some file to embed as a binary object?
+            # Is there a filename of some file to embed as a binary object?
             if type(adr.get("fakturist:Filename", None)) == str:
                 adr["xr:Attached_document"] = self._encode_binary_object(
                     json_file.parent / adr["fakturist:Filename"]
                 )
                 if adr["xr:Attached_document"] is None:
                     self._logger.info(f" > reference skipped as data are incomplete")
-                    adr = None
-        self._additional_document_references = [
-            adr for adr in self._additional_document_references if adr is not None
-        ]
+                    continue
+            complete_references.append(adr)
+        self._additional_document_references = complete_references
 
         self._harmonise_imported_data()
         self._calculate_tax_total()
