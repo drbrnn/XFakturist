@@ -93,7 +93,7 @@ INVOICE_SIGNATURES[1]="<Invoice |<[a-z0-9]+\:Invoice "
 INVOICE_SIGNATURES[2]="xmlns\:*[a-z0-9]*=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\""
 
 CREDITNOTE_SIGNATURES[1]="<CreditNote |<[a-z0-9]+\:CreditNote "
-CREDITNOTE_SIGNATURES[1]="xmlns\:*[a-z0-9]*=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\""
+CREDITNOTE_SIGNATURES[2]="xmlns\:*[a-z0-9]*=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\""
 
 CII_SIGNATURES[1]="<rsm:CrossIndustryInvoice\ .*"
 CII_SIGNATURES[2]="xmlns\:rsm=\"urn:un:unece:uncefact:data:standard:CrossIndustryInvoice\:*[0-9]*\""
