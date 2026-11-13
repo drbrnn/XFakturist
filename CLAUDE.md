@@ -31,7 +31,7 @@ Licensed AGPL-3.0-only; every source file carries the copyright/AGPL header — 
 - Quote path variables; invoice paths may contain spaces.
 - Scripts locate `kosit-xr/` by resolving their own symlinks, so they may be symlinked into `$PATH`. Keep that resolution block.
 - `xmllint` is optional; keep the regex fallback in `xr-convert`.
-- When bumping KoSIT/Saxon/FOP versions, edit only the version variables at the top of `get-kosit-xr` and check that the archive layouts still match the `mv`/`ln` steps.
+- To update the KoSIT/Saxon/FOP versions, follow the `/update-kosit` skill (`.claude/skills/update-kosit/`). In short: edit only the version variables at the top of `get-kosit-xr` and check that the archive layouts still match the `mv`/`ln` steps.
 
 ## Verifying changes
 There is no test suite. Starting from the repo root, run the round trip in a scratch directory so outputs and `template.log` don't land in the repo:
